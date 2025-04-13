@@ -1,5 +1,6 @@
 #include "parsing.h"
 
+
 // parses an argument of the command stream input
 static char *
 get_token(char *buf, int idx)
@@ -103,18 +104,29 @@ static char *
 expand_environ_var(char *arg) //
 {
 	if (arg[0] == '$'){ //arg = $? arg + 1 = ?
-		char* var_expandida = arg + 1; // echo $? 
-		char* env = getenv(var_expandida); //arg es  $PATH --> bin/home/... | si arg es $juanma --> NULL
-
-		if (env){
-			if(strlen(arg) < strlen(env)){
-				arg = realloc(arg, strlen(env) + 1); // + 1 para el \0
-			}
-			strcpy(arg,env);
+		if(strcmp(arg,"$?") == 0){
+			extern int status;
+			int status_len = snprintf(NULL, 0, "%i",status);
+			int len = status_len + 1;
+			arg = realloc(arg,len);
+			snprintf(arg, len, "%i",status);
 		} else{
-			free(arg);
-			arg = strdup(""); // le agrga memoria automaticamente
-		}	
+			char* var_expandida = arg + 1; // echo $? 
+			char* env = getenv(var_expandida); //arg es  $PATH --> bin/home/... | si arg es $juanma --> NULL
+
+			if (env){
+				int len_arg = strlen(arg);
+				int len_env = strlen(env);
+				if(len_arg< len_env){
+					int len = len_env + 1;
+					arg = realloc(arg, len); // + 1 para el \0
+				}
+				strcpy(arg,env);
+			} else{
+				free(arg);
+				arg = strdup(""); // le agrga memoria automaticamente
+			}	
+		}
 	}
 
 	return arg;
