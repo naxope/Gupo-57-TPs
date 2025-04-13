@@ -1,4 +1,6 @@
 #include "exec.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 // sets "key" with the key part of "arg"
 // and null-terminates it
@@ -46,9 +48,23 @@ get_environ_value(char *arg, char *value, int idx)
 // 	get the index where the '=' is
 // - 'get_environ_*()' can be useful here
 static void
-set_environ_vars(char **eargv, int eargc)
+set_environ_vars(char **eargv, int eargc) // USER=nadie ENTORNO=nada /usr/bin/env | grep =nad --> eargv = {USER=nadie, ENTORNO=nada}
 {
-	// Your code here
+	for(int i = 0; i < eargc; i++) {
+		int idx;
+		if ((idx = block_contains(eargv[i], '=')) > 0) {
+			if(idx != -1){
+				char* value = malloc(strlen(eargv[i]) * sizeof(char)); // 
+				char*  key = malloc(strlen(eargv[i]) * sizeof(char));
+				get_environ_value(eargv[i], value, idx);
+				get_environ_key(eargv[i], key);
+				setenv(key, value,1);
+				free(key);
+				free(value);
+			}
+		}
+		
+	}
 }
 
 // opens the file in which the stdin/stdout/stderr
@@ -86,11 +102,12 @@ exec_cmd(struct cmd *cmd)
 
 	switch (cmd->type) {
 	case EXEC:
-		// spawns a command
-		//
-		// Your code here
-		printf("Commands are not yet implemented\n");
-		_exit(-1);
+		e = (struct execcmd *)cmd;
+		set_environ_vars(e->eargv, e->eargc);
+		if(execvp(e->eargv[0],e->eargv) < 0){
+			_exit(EXIT_FAILURE);
+		}
+		_exit(EXIT_SUCCESS);
 		break;
 
 	case BACK: {
