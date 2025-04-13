@@ -76,6 +76,7 @@ parse_environ_var(struct execcmd *c, char *arg)
 		// 	./prog -arg=value
 		// 	./prog --arg=value
 		// )
+
 		if (block_contains(arg, '-') < 0) {
 			c->eargv[c->eargc++] = arg;
 			return true;
@@ -99,9 +100,22 @@ parse_environ_var(struct execcmd *c, char *arg)
 //		It could be greater than the current size of 'arg'
 //		If that's the case, you should realloc 'arg' to the new size.
 static char *
-expand_environ_var(char *arg)
+expand_environ_var(char *arg) //
 {
-	// Your code here
+	if (arg[0] == '$'){ //arg = $? arg + 1 = ?
+		char* var_expandida = arg + 1; // echo $? 
+		char* env = getenv(var_expandida); //arg es  $PATH --> bin/home/... | si arg es $juanma --> NULL
+
+		if (env){
+			if(strlen(arg) < strlen(env)){
+				arg = realloc(arg, strlen(env) + 1); // + 1 para el \0
+			}
+			strcpy(arg,env);
+		} else{
+			free(arg);
+			arg = strdup(""); // le agrga memoria automaticamente
+		}	
+	}
 
 	return arg;
 }
@@ -134,9 +148,10 @@ parse_exec(char *buf_cmd)
 
 		tok = expand_environ_var(tok);
 
-		c->argv[argc++] = tok;
+		if(strlen(tok) > 0){
+			c->argv[argc++] = tok;
+		}
 	}
-
 	c->argv[argc] = (char *) NULL;
 	c->argc = argc;
 
