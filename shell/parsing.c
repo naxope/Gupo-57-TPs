@@ -214,21 +214,12 @@ parse_cmd(char *buf_cmd)
 struct cmd *
 parse_line(char *buf)
 {
-	struct cmd *cmd1, *cmd2;
-	char *pipe_pos = strchr(buf, '|');
+	struct cmd *r, *l;
 
-	if (pipe_pos != NULL) {
-		*pipe_pos = END_STRING;
-		cmd1 = parse_cmd(buf);
-		cmd2 = parse_line(pipe_pos + 1);
-	} else {
-		cmd1 = parse_cmd(buf);
-		cmd2 = NULL;
-	}
+	char *right = split_line(buf, '|');
 
-	if (cmd2 != NULL) {
-		return pipe_cmd_create(cmd1, cmd2);
-	} else {
-		return cmd1;
-	}
+	l = parse_cmd(buf);
+	r = parse_cmd(right);
+
+	return pipe_cmd_create(l, r);
 }
