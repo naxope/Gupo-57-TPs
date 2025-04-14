@@ -10,10 +10,10 @@ static void
 run_shell()
 {
 	char *cmd;
-
-	while ((cmd = read_line(prompt)) != NULL)
+	printf("\nruneo la shell\n");
+	while ((cmd = read_line(prompt)) != NULL){
 		if (run_cmd(cmd) == EXIT_SHELL)
-			return;
+			return;}
 }
 
 // initializes the shell
@@ -38,6 +38,7 @@ main(void)
 	init_shell();
 
 	run_shell();
+	printf("termina la shell");
 
 	return 0;
 }

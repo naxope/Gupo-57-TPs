@@ -33,7 +33,9 @@ run_cmd(char *cmd)
 
 	// parses the command line
 	parsed = parse_line(cmd);
-
+	if(parsed == NULL){
+		printf("retornò null");
+	}
 	// forks and run the command
 	if ((p = fork()) == 0) {
 		// keep a reference
