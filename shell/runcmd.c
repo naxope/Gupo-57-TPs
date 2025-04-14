@@ -1,4 +1,5 @@
 #include "runcmd.h"
+#include <stdio.h>
 
 int status = 0;
 struct cmd *parsed_pipe;
@@ -39,9 +40,9 @@ run_cmd(char *cmd)
 		// keep a reference
 		// to the parsed pipe cmd
 		// so it can be freed later
-		if (parsed->type == PIPE)
+		if (parsed->type == PIPE) {
 			parsed_pipe = parsed;
-
+		}
 		exec_cmd(parsed);
 	}
 

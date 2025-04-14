@@ -1,4 +1,5 @@
 #include "exec.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -48,22 +49,20 @@ get_environ_value(char *arg, char *value, int idx)
 // 	get the index where the '=' is
 // - 'get_environ_*()' can be useful here
 static void
-set_environ_vars(char **eargv, int eargc) // USER=nadie ENTORNO=nada /usr/bin/env | grep =nad --> eargv = {USER=nadie, ENTORNO=nada}
+set_environ_vars(
+        char **eargv, int eargc)  // USER=nadie ENTORNO=nada /usr/bin/env | grep
+                                  // =nad --> eargv = {USER=nadie, ENTORNO=nada}
 {
-	for(int i = 0; i < eargc; i++) {
-		int idx;
-		if ((idx = block_contains(eargv[i], '=')) > 0) {
-			if(idx != -1){
-				char* value = malloc(strlen(eargv[i]) * sizeof(char)); // 
-				char*  key = malloc(strlen(eargv[i]) * sizeof(char));
-				get_environ_value(eargv[i], value, idx);
-				get_environ_key(eargv[i], key);
-				setenv(key, value,1);
-				free(key);
-				free(value);
-			}
+	char value[BUFLEN];
+	char key[BUFLEN];
+	for (int i = 0; i < eargc; i++) {
+		char *arg = eargv[i];
+		int idx = block_contains(arg, '=');
+		if (idx >= 0) {  // existe "=" en la cadena
+			get_environ_value(eargv[i], value, idx);
+			get_environ_key(eargv[i], key);
+			setenv(key, value, 1);
 		}
-		
 	}
 }
 
@@ -80,7 +79,11 @@ set_environ_vars(char **eargv, int eargc) // USER=nadie ENTORNO=nada /usr/bin/en
 static int
 open_redir_fd(char *file, int flags)
 {
-	// Your code here
+	int fd = open(file, flags, 0644);
+	if (fd < 0) {
+		exit(EXIT_FAILURE);
+	}
+	return fd;
 
 	return -1;
 }
@@ -94,17 +97,17 @@ open_redir_fd(char *file, int flags)
 void
 exec_cmd(struct cmd *cmd)
 {
-	// To be used in the different cases
 	struct execcmd *e;
 	struct backcmd *b;
 	struct execcmd *r;
 	struct pipecmd *p;
 
+
 	switch (cmd->type) {
 	case EXEC:
-		e = (struct execcmd *)cmd;
+		e = (struct execcmd *) cmd;
 		set_environ_vars(e->eargv, e->eargc);
-		if(execvp(e->eargv[0],e->eargv) < 0){
+		if (execvp(e->argv[0], e->argv) < 0) {
 			_exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
@@ -126,16 +129,82 @@ exec_cmd(struct cmd *cmd)
 		// verify if file name's length (in the execcmd struct)
 		// is greater than zero
 		//
-		// Your code here
-		printf("Redirections are not yet implemented\n");
-		_exit(-1);
+		r = (struct execcmd *) cmd;
+
+		if (strlen(r->in_file) > 0) {
+			int new_fd_in =
+			        open_redir_fd(r->in_file, O_RDONLY | O_CLOEXEC);
+			dup2(new_fd_in, STDIN_FILENO);
+			close(new_fd_in);
+		}
+		if (strlen(r->out_file) > 0) {
+			int new_fd_out =
+			        open_redir_fd(r->out_file,
+			                      O_WRONLY | O_CREAT | O_TRUNC |
+			                              O_CLOEXEC);
+			dup2(new_fd_out, STDOUT_FILENO);
+			close(new_fd_out);
+		}
+		if (strlen(r->err_file) > 0) {
+			if (r->err_file[0] == '&') {
+				dup2(STDOUT_FILENO, STDERR_FILENO);
+			} else {
+				int new_fd_err = open_redir_fd(
+				        r->err_file,
+				        O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC);
+				dup2(new_fd_err, STDERR_FILENO);
+				close(new_fd_err);
+			}
+		}
+		pid_t process = fork();
+		if (process == 0) {
+			execvp(r->argv[0], r->argv);
+			_exit(1);
+		} else if (process > 0) {
+			wait(0);
+		}
 		break;
 	}
 
 	case PIPE: {
-		// pipes two commands
-		//
-		// Your code here
+		p = (struct pipecmd *) cmd;
+
+		int fd_left_right[2];
+
+		pipe(fd_left_right);
+
+		pid_t primer_proceso = fork();
+
+		if (primer_proceso == 0) {
+			// se le asigna como salida la entrada del pipe, y se hace un execvp al comando
+			dup2(fd_left_right[1], STDOUT_FILENO);
+			close(fd_left_right[0]);
+			close(fd_left_right[1]);
+			exec_cmd(p->leftcmd);
+			_exit(1);  // exec_cmd deberìa hacer exit
+		}
+
+
+		pid_t segundo_proceso = fork();
+
+		if (segundo_proceso == 0) {
+			dup2(fd_left_right[0], STDIN_FILENO);
+			close(fd_left_right[1]);
+			close(fd_left_right[0]);
+			exec_cmd(p->rightcmd);
+			_exit(1);
+		}
+
+		close(fd_left_right[0]);
+		close(fd_left_right[1]);
+
+		waitpid(primer_proceso, NULL, 0);
+
+		waitpid(segundo_proceso, NULL, 0);
+
+		_exit(0);
+
+
 		printf("Pipes are not yet implemented\n");
 
 		// free the memory allocated

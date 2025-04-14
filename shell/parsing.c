@@ -1,4 +1,5 @@
 #include "parsing.h"
+#include <stdio.h>
 
 
 // parses an argument of the command stream input
@@ -101,31 +102,33 @@ parse_environ_var(struct execcmd *c, char *arg)
 //		It could be greater than the current size of 'arg'
 //		If that's the case, you should realloc 'arg' to the new size.
 static char *
-expand_environ_var(char *arg) //
+expand_environ_var(char *arg)  //
 {
-	if (arg[0] == '$'){ //arg = $? arg + 1 = ?
-		if(strcmp(arg,"$?") == 0){
-			extern int status;
-			int status_len = snprintf(NULL, 0, "%i",status);
-			int len = status_len + 1;
-			arg = realloc(arg,len);
-			snprintf(arg, len, "%i",status);
-		} else{
-			char* var_expandida = arg + 1; // echo $? 
-			char* env = getenv(var_expandida); //arg es  $PATH --> bin/home/... | si arg es $juanma --> NULL
+	if (arg[0] == '$') {  // arg = $? arg + 1 = ?
 
-			if (env){
+		if (strcmp(arg, "$?") == 0) {
+			extern int status;
+			int status_len =
+			        snprintf(NULL, 0, "%d", status);  // echo $PATH
+			int len = status_len + 1;
+			arg = realloc(arg, len);
+			snprintf(arg, len, "%d", status);
+		} else {
+			char *var_expandida = arg + 1;  // echo $?
+			char *env = getenv(
+			        var_expandida);  // arg es  $PATH --> bin/home/... | si arg es $juanma --> NULL
+
+
+			if (env) {
 				int len_arg = strlen(arg);
 				int len_env = strlen(env);
-				if(len_arg< len_env){
-					int len = len_env + 1;
-					arg = realloc(arg, len); // + 1 para el \0
-				}
-				strcpy(arg,env);
-			} else{
+				int len = len_env + 1;
+				arg = realloc(arg, len);  // + 1 para el \0
+				strcpy(arg, env);
+			} else {
 				free(arg);
-				arg = strdup(""); // le agrga memoria automaticamente
-			}	
+				arg = strdup("");  // le agrga memoria automaticamente
+			}
 		}
 	}
 
@@ -160,13 +163,12 @@ parse_exec(char *buf_cmd)
 
 		tok = expand_environ_var(tok);
 
-		if(strlen(tok) > 0){
+		if (strlen(tok) > 0) {
 			c->argv[argc++] = tok;
 		}
 	}
 	c->argv[argc] = (char *) NULL;
 	c->argc = argc;
-
 	return (struct cmd *) c;
 }
 
@@ -200,8 +202,9 @@ parse_cmd(char *buf_cmd)
 	// checks if the background symbol is after
 	// a redir symbol, in which case
 	// it does not have to run in in the 'back'
-	if ((idx = block_contains(buf_cmd, '&')) >= 0 && buf_cmd[idx - 1] != '>')
+	if ((idx = block_contains(buf_cmd, '&')) >= 0 && buf_cmd[idx - 1] != '>') {
 		return parse_back(buf_cmd);
+	}
 
 	return parse_exec(buf_cmd);
 }
@@ -211,12 +214,21 @@ parse_cmd(char *buf_cmd)
 struct cmd *
 parse_line(char *buf)
 {
-	struct cmd *r, *l;
+	struct cmd *cmd1, *cmd2;
+	char *pipe_pos = strchr(buf, '|');
 
-	char *right = split_line(buf, '|');
+	if (pipe_pos != NULL) {
+		*pipe_pos = END_STRING;
+		cmd1 = parse_cmd(buf);
+		cmd2 = parse_line(pipe_pos + 1);
+	} else {
+		cmd1 = parse_cmd(buf);
+		cmd2 = NULL;
+	}
 
-	l = parse_cmd(buf);
-	r = parse_cmd(right);
-
-	return pipe_cmd_create(l, r);
+	if (cmd2 != NULL) {
+		return pipe_cmd_create(cmd1, cmd2);
+	} else {
+		return cmd1;
+	}
 }
