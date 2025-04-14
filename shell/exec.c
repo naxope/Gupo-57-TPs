@@ -86,10 +86,15 @@ exec_cmd(struct cmd *cmd)
 
 	switch (cmd->type) {
 	case EXEC:
-		// spawns a command
-		//
-		// Your code here
-		printf("Commands are not yet implemented\n");
+		e = (struct execcmd *) cmd;
+
+		if(e->argv[0]==0){
+			_exit(0);
+		}
+		execvp(e->argv[0],e->argv);
+
+
+		perror("ocurriò un error");
 		_exit(-1);
 		break;
 
@@ -116,9 +121,45 @@ exec_cmd(struct cmd *cmd)
 	}
 
 	case PIPE: {
-		// pipes two commands
-		//
-		// Your code here
+		p = (struct pipecmd *) cmd;
+
+		int fd_left_right[2];
+
+		pipe(fd_left_right);
+		
+		pid_t primer_proceso = fork();
+
+		if(primer_proceso == 0){
+			//se le asigna como salida la entrada del pipe, y se hace un execvp al comando
+			dup2(fd_left_right[1],STDOUT_FILENO);
+			close(fd_left_right[0]);
+			close(fd_left_right[1]);
+			exec_cmd(p->leftcmd );
+			_exit(1); //exec_cmd deberìa hacer exit
+			
+		}
+
+		
+		pid_t segundo_proceso = fork();
+
+		if(segundo_proceso == 0){
+			dup2(fd_left_right[0],STDIN_FILENO);
+			close(fd_left_right[1]);
+			close(fd_left_right[0]);
+			exec_cmd(p->rightcmd);
+			_exit(1);
+		}
+
+		close(fd_left_right[0]);
+    	close(fd_left_right[1]);
+		
+		waitpid(primer_proceso, NULL, 0);
+		
+        waitpid(segundo_proceso, NULL, 0);
+		
+		_exit(0);
+
+
 		printf("Pipes are not yet implemented\n");
 
 		// free the memory allocated
