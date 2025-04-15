@@ -26,10 +26,28 @@ exit_shell(char *cmd)
 //  2. cmd = ['c','d', '\0']
 int
 cd(char *cmd)
-{
-	// Your code here
+{	
+	// Me fijo que:
+	// 1. El comando empieze con cd
+	// 2. El segundo caracter sea espacio o fin "Por ejemplo que no sea cdf o cdkgfjfd"
+	if (strncmp(cmd, "cd", 2) != 0 || (cmd[2] != ' ' && cmd[2] != '\0'))
+        return false; 
 
-	return 0;
+	// Creo la variable apuntando a referencia nula
+	char *dir = NULL;
+
+	//Si no hay argumentos
+	if (cmd[2] == "\0"){
+		// Debo cambiar a HOME
+		dir = getenv("HOME");
+	}
+	else {
+		dir = cmd + 3; 	//Me salteo el cd y el espacio
+						//Me quedo con el resto de la cadena
+	}
+	
+	chdir(dir); //Cambio de directorio
+	return true;
 }
 
 // returns true if 'pwd' was invoked
