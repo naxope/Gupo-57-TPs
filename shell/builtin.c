@@ -7,9 +7,12 @@
 int
 exit_shell(char *cmd)
 {
-	// Your code here
+	// Me fijo que el comando sea exit, y no algo que solo empieze con exit
+	if (strncmp(cmd, "exit", 4) != 0 || (cmd[4] != ' ' && cmd[4] != '\0'))
+		return true;
 
-	return 0;
+	return false; 
+
 }
 
 // returns true if "chdir" was performed
