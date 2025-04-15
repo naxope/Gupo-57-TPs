@@ -36,17 +36,17 @@ cd(char *cmd)
 	// Creo la variable apuntando a referencia nula
 	char *dir = NULL;
 
-	//Si no hay argumentos
+	// Si no hay argumentos
 	if (cmd[2] == "\0"){
 		// Debo cambiar a HOME
 		dir = getenv("HOME");
 	}
 	else {
-		dir = cmd + 3; 	//Me salteo el cd y el espacio
-						//Me quedo con el resto de la cadena
+		dir = cmd + 3; 	// Me salteo el cd y el espacio
+						// Me quedo con el resto de la cadena
 	}
 	
-	chdir(dir); //Cambio de directorio
+	chdir(dir); // Cambio de directorio
 	return true;
 }
 
@@ -58,9 +58,19 @@ cd(char *cmd)
 int
 pwd(char *cmd)
 {
-	// Your code here
+	// Me fijo que el comando sea pwd
+	if(strncmp(cmd, "pwd", 3) != 0)
+		return false;
+	
+	// Declaro el buffer que voy a usar
+	char buf[BUFLEN];
 
-	return 0;
+	// Busco el directorio actual
+	getcwd(buf, sizeof buf);
+	// Y lo imprimo
+	printf("%s\n", buf);
+	return true;
+
 }
 
 // returns true if `history` was invoked
