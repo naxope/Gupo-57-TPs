@@ -50,6 +50,10 @@ cd(char *cmd)
 	}
 	
 	chdir(dir); // Cambio de directorio
+
+	// Actualizo el prompt
+	print_dir();
+	
 	return true;
 }
 
@@ -65,13 +69,8 @@ pwd(char *cmd)
 	if(strncmp(cmd, "pwd", 3) != 0)
 		return false;
 	
-	// Declaro el buffer que voy a usar
-	char buf[BUFLEN];
-
-	// Busco el directorio actual
-	getcwd(buf, sizeof buf);
-	// Y lo imprimo
-	printf("%s\n", buf);
+	
+	print_dir();
 	return true;
 
 }
@@ -87,4 +86,11 @@ history(char *cmd)
 	// Your code here
 
 	return 0;
+}
+
+
+void print_dir(){
+	char buf[BUFLEN];
+	getcwd(buf, sizeof buf);
+	printf("%s\n", buf);
 }
