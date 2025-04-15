@@ -53,7 +53,7 @@ cd(char *cmd)
 
 	// Actualizo el prompt
 	print_dir();
-	
+
 	return true;
 }
 
@@ -90,7 +90,10 @@ history(char *cmd)
 
 
 void print_dir(){
+	// Declaro el buffer
 	char buf[BUFLEN];
+	// Obtengo el directorio actual
 	getcwd(buf, sizeof buf);
+	// Imprimo el directorio actual
 	printf("%s\n", buf);
 }
